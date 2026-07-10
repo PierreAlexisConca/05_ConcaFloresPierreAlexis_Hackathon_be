@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: ConcaFlores-Matricula360
+
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=EduFuturo;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: Alexis123!
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true

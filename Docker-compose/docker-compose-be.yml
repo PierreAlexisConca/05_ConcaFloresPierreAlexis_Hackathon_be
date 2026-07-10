@@ -1,0 +1,36 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# DOCKER-COMPOSE BACKEND - ConcaFlores
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# LEVANTRAR:    docker compose -f docker-compose-be.yml up -d
+# BAJAR:        docker compose -f docker-compose-be.yml down
+# LOGS:         docker logs recuperacion-backend -f
+# RED PREVIA:   docker network create my-network
+#
+# ═════════════════════════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  backend:
+    image: concaflores/recuperacion_be:1.0
+    container_name: recuperacion-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=ConcaFlores;encrypt=true;trustServerCertificate=true
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-Alexis123!}
+      - CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:80,http://localhost:4200
+    networks:
+      - my-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/promotores"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  my-network:
+    external: true

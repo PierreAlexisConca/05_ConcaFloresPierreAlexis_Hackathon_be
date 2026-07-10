@@ -1,0 +1,244 @@
+═════════════════════════════════════════════════════════════════════════════
+    INSTRUCCIONES - DOCKER BUILD Y PUSH BACKEND (ConcaFlores)
+═════════════════════════════════════════════════════════════════════════════
+
+IMAGEN: concaflores/recuperacion_be:1.0
+PUERTO: 8080
+DESCRIPCIÓN: Backend Spring Boot con Java 25
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 1: CONSTRUIR LA IMAGEN LOCALMENTE
+═════════════════════════════════════════════════════════════════════════════
+
+Abre tu terminal/PowerShell y navega a la carpeta RAÍZ del backend:
+
+$ cd C:\Users\MATHEW\Desktop\hackaton\ConcaFlores
+
+O simplemente:
+
+$ cd .\ConcaFlores
+
+Luego ejecuta el comando de build:
+
+$ docker build -t concaflores/recuperacion_be:1.0 -f Dockerfile-Conca/Dockerfile .
+
+RESULTADO ESPERADO:
+───────────────────
+- Successfully built [IMAGE_ID]
+- Successfully tagged concaflores/recuperacion_be:1.0
+
+Este proceso puede tardar 2-5 minutos en compilar el JAR.
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 2: VERIFICAR QUE LA IMAGEN FUE CREADA
+═════════════════════════════════════════════════════════════════════════════
+
+$ docker images
+
+Deberías ver en la lista:
+
+REPOSITORY                  TAG      IMAGE ID
+concaflores/recuperacion_be 1.0      [ID]
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 3: HACER LOGIN EN DOCKER HUB (si aún no lo has hecho)
+═════════════════════════════════════════════════════════════════════════════
+
+$ docker login
+
+Te pedirá:
+- Username: concaflores
+- Password: [tu contraseña de Docker Hub]
+
+RESULTADO ESPERADO:
+───────────────────
+Login Succeeded
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 4: SUBIR LA IMAGEN A DOCKER HUB
+═════════════════════════════════════════════════════════════════════════════
+
+$ docker push concaflores/recuperacion_be:1.0
+
+Este proceso puede tomar de 10 a 30 minutos dependiendo de tu conexión
+(la imagen es más grande ~200-300MB).
+
+RESULTADO ESPERADO:
+───────────────────
+Pushing repository concaflores/recuperacion_be
+[... múltiples capas siendo enviadas ...]
+1.0: digest: sha256:... size: ...
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 5: VERIFICAR QUE LA IMAGEN ESTÁ EN DOCKER HUB
+═════════════════════════════════════════════════════════════════════════════
+
+Abre tu navegador y ve a:
+
+https://hub.docker.com/r/concaflores/recuperacion_be
+
+Deberías ver la imagen con el tag "1.0" listado.
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 6 (OPCIONAL): PROBAR LA IMAGEN LOCALMENTE ANTES DE AWS
+═════════════════════════════════════════════════════════════════════════════
+
+Si quieres probar la imagen en tu computadora antes de subirla a AWS:
+
+$ docker run -d --name recuperacion_be_test -p 8080:8080 concaflores/recuperacion_be:1.0
+
+Luego verifica que esté corriendo:
+
+$ docker ps
+
+Ver los logs:
+
+$ docker logs recuperacion_be_test
+
+Probar API (desde otra terminal):
+
+$ curl http://localhost:8080/api/promotores
+
+Deberías ver JSON con los promotores (o error si no hay BD).
+
+Para detener el contenedor:
+
+$ docker stop recuperacion_be_test
+$ docker rm recuperacion_be_test
+
+═════════════════════════════════════════════════════════════════════════════
+PASO 7: DESCARGAR E INSTALAR EN AWS EC2
+═════════════════════════════════════════════════════════════════════════════
+
+SSH a tu instancia EC2 (instancia 1 - backend):
+
+$ ssh -i tu-clave.pem ec2-user@[IP_PUBLICA_EC2]
+
+Ejecuta:
+
+$ docker pull concaflores/recuperacion_be:1.0
+
+Luego corre el contenedor CON LAS VARIABLES DE ENTORNO para conectar a SQL Server:
+
+$ docker run -d \
+  --name recuperacion_be \
+  -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:sqlserver://[SQL_SERVER_IP]:1433;databaseName=ConcaFlores \
+  -e SPRING_DATASOURCE_USERNAME=sa \
+  -e SPRING_DATASOURCE_PASSWORD=[TU_CONTRASEÑA_SA] \
+  concaflores/recuperacion_be:1.0
+
+IMPORTANTE - REEMPLAZA:
+───────────────────────
+[SQL_SERVER_IP]        = IP de tu instancia SQL Server
+[TU_CONTRASEÑA_SA]     = Contraseña del usuario SA
+
+Ejemplo completo:
+
+$ docker run -d \
+  --name recuperacion_be \
+  -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:sqlserver://10.0.1.50:1433;databaseName=ConcaFlores \
+  -e SPRING_DATASOURCE_USERNAME=sa \
+  -e SPRING_DATASOURCE_PASSWORD=Admin123456 \
+  concaflores/recuperacion_be:1.0
+
+Verifica que esté corriendo:
+
+$ docker ps
+
+Ver logs:
+
+$ docker logs recuperacion_be
+
+Accede a tu API:
+
+curl http://localhost:8080/api/promotores
+
+O desde tu navegador:
+
+http://[IP_EC2]:8080/swagger-ui.html  (Documentación Swagger)
+
+═════════════════════════════════════════════════════════════════════════════
+LISTA DE VERIFICACIÓN
+═════════════════════════════════════════════════════════════════════════════
+
+☐ He navegado a la carpeta ConcaFlores
+☐ He ejecutado: docker build -t concaflores/recuperacion_be:1.0 -f Dockerfile-Conca/Dockerfile .
+☐ La compilación fue exitosa (BUILD SUCCESS)
+☐ He verificado la imagen con: docker images
+☐ He hecho login con: docker login
+☐ He enviado la imagen con: docker push concaflores/recuperacion_be:1.0
+☐ He verificado en Docker Hub que la imagen existe
+☐ (Opcional) He probado localmente con: docker run -d -p 8080:8080 concaflores/recuperacion_be:1.0
+☐ He descargado en AWS EC2 con: docker pull concaflores/recuperacion_be:1.0
+☐ He ejecutado el contenedor en AWS CON VARIABLES DE ENTORNO
+☐ La API está accesible en: http://[IP_EC2]:8080/api/promotores
+
+═════════════════════════════════════════════════════════════════════════════
+SOLUCIÓN DE PROBLEMAS
+═════════════════════════════════════════════════════════════════════════════
+
+Problema: "docker: command not found"
+Solución: Docker no está instalado. Instálalo desde: https://www.docker.com/products/docker-desktop
+
+Problema: "ERROR: Could not build image"
+Solución: 
+- Verifica que estés en la carpeta correcta (ConcaFlores)
+- Verifica que el archivo Dockerfile-Conca/Dockerfile exista
+- Verifica que tienes espacio en disco (~5GB mínimo)
+
+Problema: "denied: requested access is denied"
+Solución: Haz login de nuevo: docker login
+
+Problema: "Build timed out"
+Solución: Tu conexión es lenta. Intenta nuevamente o usa mejor WiFi.
+
+Problema: El contenedor en AWS no inicia
+Solución:
+- Ve los logs: docker logs recuperacion_be
+- Verifica variables de entorno: docker inspect recuperacion_be
+- Verifica que SQL Server es accesible desde EC2
+- Verifica security groups permiten puerto 1433 desde EC2 a SQL Server
+
+Problema: "Connection refused" al conectar a API
+Solución:
+- Verifica que el contenedor está corriendo: docker ps
+- Verifica que el puerto 8080 está abierto en security group
+
+Problema: "Cannot connect to database"
+Solución:
+- Verifica que SPRING_DATASOURCE_URL es correcto
+- Verifica que SQL Server está corriendo
+- Verifica que el usuario SA tiene la contraseña correcta
+- Verifica que el security group permite puerto 1433
+
+═════════════════════════════════════════════════════════════════════════════
+ARCHIVOS IMPORTANTES
+═════════════════════════════════════════════════════════════════════════════
+
+Dockerfile:      Dockerfile-Conca/Dockerfile
+Maven Config:    pom.xml (en la raíz de ConcaFlores)
+Imagen final:    concaflores/recuperacion_be:1.0
+Puerto:          8080
+Versión:         1.0
+Java:            25
+Framework:       Spring Boot 3.5.0
+
+═════════════════════════════════════════════════════════════════════════════
+SIGUIENTES PASOS
+═════════════════════════════════════════════════════════════════════════════
+
+1. ✅ Backend Docker listo (tú estás aquí)
+
+2. ⏭️ Ahora necesitas construir el frontend:
+   - Carpeta: ConcaFlores-fe/Dockerfile-Alexis/
+   - Instrucciones: ConcaFlores-fe/Dockerfile-Alexis/INSTRUCCIONES.txt
+   - Imagen: concaflores/recuperacion_fe:1.0
+   - Puerto: 80
+
+3. ⏭️ Después: Crear 2 instancias EC2 en AWS
+
+4. ⏭️ Finalmente: Desplegar ambas imágenes en EC2
+
+═════════════════════════════════════════════════════════════════════════════
